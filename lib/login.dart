@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/register.dart';
 import 'package:mysql1/mysql1.dart' as mysql;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'home.dart';
-import 'register.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,6 +36,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
+  SharedPreferences? prefs; // Tambahkan tanda tanya (?) agar nullable
 
   _launchURL() async {
     const url = 'https://register.com/register';
@@ -46,12 +48,34 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signIn() async {
+    // Memeriksa apakah email dan password kosong
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Login tidak berhasil"),
+            content: Text("Tolong isi email dan password dengan benar"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+      return; // Menghentikan eksekusi lebih lanjut jika email atau password kosong
+    }
+
     final settings = mysql.ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
     );
 
     final conn = await mysql.MySqlConnection.connect(settings);
@@ -65,6 +89,17 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (results.isNotEmpty) {
+      final row = results.first;
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('name', row['name']);
+      await prefs.setString('email', row['email']);
+      await prefs.setString('role', row['role']);
+
+      // Cek jika 'image' tidak null sebelum menyimpan ke SharedPreferences
+      if (row['image'] != null) {
+        await prefs.setString('profile_image_base64', row['image']);
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
@@ -74,8 +109,8 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Login Failed"),
-            content: Text("Invalid email or password"),
+            title: Text("Login tidak berhasil"),
+            content: Text("Email atau password yang diisi tidak terdaftar"),
             actions: [
               TextButton(
                 onPressed: () {

@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
-import 'package:flutter_application_1/products.dart'; // Sesuaikan dengan path file products.dart
-
+import 'package:random_color/random_color.dart';
 
 class ProductsPage extends StatefulWidget {
   @override
@@ -13,6 +12,8 @@ class _ProductsPageState extends State<ProductsPage> {
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _produks = [];
   TextEditingController _searchController = TextEditingController();
+  RandomColor _randomColor = RandomColor();
+  List<Map<String, dynamic>> _filteredProduks = [];
 
   @override
   void initState() {
@@ -22,11 +23,11 @@ class _ProductsPageState extends State<ProductsPage> {
 
   Future<void> _connectToDB() async {
     final settings = ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
     );
 
     try {
@@ -45,7 +46,20 @@ class _ProductsPageState extends State<ProductsPage> {
       results.forEach((row) {
         _produks.add(Map<String, dynamic>.from(row.fields));
       });
+      _applyFilter();
     });
+  }
+
+  void _applyFilter() {
+    final searchText = _searchController.text.toLowerCase();
+    if (searchText.isEmpty) {
+      _filteredProduks = List.from(_produks);
+    } else {
+      _filteredProduks = _produks.where((produk) {
+        final productName = produk['nama_service'].toString().toLowerCase();
+        return productName.contains(searchText);
+      }).toList();
+    }
   }
 
   @override
@@ -55,19 +69,11 @@ class _ProductsPageState extends State<ProductsPage> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _filteredProduks = [];
-
   @override
   Widget build(BuildContext context) {
-    _filteredProduks = _produks.where((produk) {
-      final productName = produk['nama_service'].toString().toLowerCase();
-      final searchText = _searchController.text.toLowerCase();
-      return productName.contains(searchText);
-    }).toList();
-
     // Menghitung seberapa sering setiap service muncul dalam data
     Map<String, int> serviceFrequency = {};
-    _filteredProduks.forEach((produk) {
+    _produks.forEach((produk) {
       String serviceName = produk['nama_service'];
       serviceFrequency.update(serviceName, (value) => value + 1,
           ifAbsent: () => 1);
@@ -75,11 +81,10 @@ class _ProductsPageState extends State<ProductsPage> {
 
     // Membuat list dari data untuk chart
     List<PieChartSectionData> sections = [];
-    int sectionIndex = 30;
     serviceFrequency.forEach((serviceName, frequency) {
       sections.add(
         PieChartSectionData(
-          color: Colors.accents[sectionIndex % Colors.accents.length],
+          color: _randomColor.randomColor(),
           value: frequency.toDouble(),
           title: '$serviceName\n($frequency)',
           radius: 115, // Atur besar kecilnya donut chart di sini
@@ -91,7 +96,6 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ),
       );
-      sectionIndex++;
     });
 
     return Scaffold(
@@ -179,7 +183,9 @@ class _ProductsPageState extends State<ProductsPage> {
                                 ),
                               ),
                               onChanged: (value) {
-                                setState(() {});
+                                setState(() {
+                                  _applyFilter();
+                                });
                               },
                             ),
                           ),
@@ -195,12 +201,13 @@ class _ProductsPageState extends State<ProductsPage> {
                                   DataColumn(label: Text('No')),
                                   DataColumn(label: Text('Product')),
                                   DataColumn(label: Text('ID Service')),
-                                  DataColumn(label: Text('Service Name')),
+                                  const DataColumn(label: Text('Service Name')),
                                   DataColumn(label: Text('Description')),
                                   DataColumn(label: Text('Data Added')),
                                   DataColumn(label: Text('Data Updated')),
                                   DataColumn(label: Text('Created By')),
                                   DataColumn(label: Text('Created At')),
+                                  DataColumn(label: Text('Updated At')),
                                 ],
                                 rows: _filteredProduks.map((produk) {
                                   return DataRow(
@@ -219,6 +226,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                           Text('${produk['data_updated']}')),
                                       DataCell(Text('${produk['created_by']}')),
                                       DataCell(Text('${produk['created_at']}')),
+                                      DataCell(Text('${produk['updated_at']}')),
                                     ],
                                   );
                                 }).toList(),

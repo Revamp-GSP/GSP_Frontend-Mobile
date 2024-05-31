@@ -5,7 +5,7 @@ import 'package:flutter_application_1/home.dart';
 import 'package:flutter_application_1/inbox.dart';
 import 'package:flutter_application_1/login.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mysql1/mysql1.dart' as mysql;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,14 +23,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class UserProfile {
-  static String name = '';
-  static String email = '';
-  static String role = '';
-  static String profileImagePath =
-      'assets/images/your_profile.png'; // Default profile image path
-}
-
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
@@ -45,59 +37,50 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = '';
   String _role = '';
 
-  Future<void> _fetchUserData() async {
-    final settings = mysql.ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
-    );
-
-    final conn = await mysql.MySqlConnection.connect(settings);
-
-    final results = await conn.query(
-        'SELECT * FROM users WHERE name = ? AND email = ? AND role = ?',
-        [_name, _email, _role]);
-
-    if (results.isNotEmpty) {
-      final row = results.first;
-      setState(() {
-        _name = row['name'] ?? '-';
-        _email = row['email'] ?? '-';
-        _role = row['role'] ?? '-';
-      });
-    }
-
-    await conn.close();
-  }
-
   @override
   void initState() {
     super.initState();
-    _name = UserProfile.name;
-    _email = UserProfile.email;
-    _role = UserProfile.role;
-    _fetchUserData();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name = prefs.getString('name') ?? '-';
+      _email = prefs.getString('email') ?? '-';
+      _role = prefs.getString('role') ?? '-';
+      // Memeriksa apakah ada path file gambar tersimpan
+      String? imagePath = prefs.getString('profile_image');
+      if (imagePath != null) {
+        _image = File(imagePath);
+      }
+    });
+  }
+
+  Future<void> _saveImageToLocal(String imagePath) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('profile_image', imagePath);
   }
 
   Future<void> _getImageFromGallery() async {
     final image = await picker.pickImage(source: ImageSource.gallery);
-
     if (image == null) return;
 
     setState(() {
       _image = File(image.path);
+      _saveImageToLocal(
+          _image!.path); // Simpan path file gambar ke penyimpanan lokal
     });
   }
 
   Future<void> _getImageFromCamera() async {
     final image = await picker.pickImage(source: ImageSource.camera);
-
     if (image == null) return;
 
     setState(() {
       _image = File(image.path);
+      _saveImageToLocal(
+          _image!.path); // Simpan path file gambar ke penyimpanan lokal
     });
   }
 
@@ -253,11 +236,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       top: 20,
                       left: 20,
                       child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          SharedPreferences prefs =
+                              await SharedPreferences.getInstance();
+                          await prefs.clear();
+                          Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
                                 builder: (context) => LoginPage()),
+                            (Route<dynamic> route) => false,
                           );
                         },
                         child: Row(

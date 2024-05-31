@@ -1,10 +1,12 @@
-import 'package:fl_chart/fl_chart.dart'; // Import package fl_chart
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/inbox.dart';
 import 'package:flutter_application_1/list_customer.dart';
 import 'package:flutter_application_1/products.dart';
 import 'package:flutter_application_1/projects.dart';
+import 'package:mysql1/mysql1.dart' as mysql;
 import 'package:mysql1/mysql1.dart';
+import 'package:random_color/random_color.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'profile.dart';
@@ -33,22 +35,149 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> tasks = ['Task 1', 'Task 2', 'Task 3'];
+  late TextEditingController _taskEditingController;
+  late MySqlConnection _connection;
+  List<Map<String, dynamic>> _produks = [];
+  RandomColor _randomColor = RandomColor();
+  List<Map<String, dynamic>> _projects = [];
+  List<Map<String, dynamic>> _customers = [];
+  int _totalCustomers = 0;
+  List<String> statuses = [
+    'Postpone',
+    'Follow Up',
+    'Implementasi',
+    'Payment',
+    'Finished'
+  ];
 
-  void addTask(String newTask) {
+  // New variables for To-Do List
+  List<String> tasks = [];
+  List<bool> taskCompletionStatus = [];
+  String newTask = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _connectToDB();
+    _taskEditingController = TextEditingController();
+  }
+
+  Future<void> _connectToDB() async {
+    final settings = mysql.ConnectionSettings(
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
+    );
+
+    try {
+      final connection = await MySqlConnection.connect(settings);
+      var results1 = await connection.query('SELECT * FROM produks');
+      var results2 = await connection.query('SELECT * FROM projects');
+      var results3 = await connection.query(
+          'SELECT COUNT(DISTINCT nama_pelanggan) AS total FROM customers');
+
+      await connection.close();
+
+      setState(() {
+        _produks = results1.map((row) => row.fields).toList();
+        _projects = results2.map((row) => row.fields).toList();
+        _totalCustomers = results3.first['total'];
+      });
+    } catch (e) {
+      setState(() {
+        _totalCustomers = -1; // Menandakan bahwa ada kesalahan
+      });
+      print('Error connecting to database: $e');
+    }
+  }
+
+// Method to show dialog for adding tasks
+  void _showAddTaskDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Tambah Task'),
+          content: TextField(
+            onChanged: (value) {
+              newTask = value;
+            },
+            decoration: InputDecoration(hintText: 'Masukkan task baru'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (newTask.isNotEmpty) {
+                  setState(() {
+                    tasks.add(newTask);
+                    taskCompletionStatus
+                        .add(false); // Add default completion status
+                    newTask = ''; // Reset newTask value
+                  });
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text('Tambah'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Batal'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to handle checking/unchecking tasks
+  void toggleTaskCompletion(int index) {
     setState(() {
-      tasks.add(newTask);
+      taskCompletionStatus[index] = !taskCompletionStatus[index];
     });
   }
 
-  void removeTask(int index) {
+  // Method to handle deleting tasks
+  void deleteTask(int index) {
     setState(() {
       tasks.removeAt(index);
+      taskCompletionStatus.removeAt(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> _filteredProduks = _produks;
+
+    // Menghitung seberapa sering setiap service muncul dalam data
+    Map<String, int> serviceFrequency = {};
+    _filteredProduks.forEach((produk) {
+      String serviceName = produk['nama_service'];
+      serviceFrequency.update(serviceName, (value) => value + 1,
+          ifAbsent: () => 1);
+    });
+
+    // Membuat list dari data untuk chart
+    List<PieChartSectionData> sections = [];
+    serviceFrequency.forEach((serviceName, frequency) {
+      sections.add(
+        PieChartSectionData(
+          color: _randomColor.randomColor(),
+          value: frequency.toDouble(),
+          title: '$serviceName\n($frequency)',
+          radius: 115, // Atur besar kecilnya donut chart di sini
+          titleStyle: TextStyle(
+            fontSize:
+                12, // Atur ukuran font agar tidak melebihi batas donut chart
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    });
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 195, 211, 227),
       body: SingleChildScrollView(
@@ -90,10 +219,12 @@ class _HomePageState extends State<HomePage> {
                       SizedBox(width: 35), // Jarak awal
 
                       // Kotak 1
+
                       Stack(
                         children: [
                           Container(
                             width: 350,
+                            height: 400, // Atur tinggi sesuai kebutuhan Anda
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(15),
                               color: Colors.white,
@@ -106,222 +237,138 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ],
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    'Projects',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.5,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  height: 250,
-                                  padding: const EdgeInsets.all(8.0),
-                                  child:
-                                      FutureBuilder<List<Map<String, dynamic>>>(
-                                    future: fetchProjectsFromDatabase(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const Center(
-                                            child: CircularProgressIndicator());
-                                      } else if (snapshot.hasError) {
-                                        return Text('Error: ${snapshot.error}');
-                                      } else {
-                                        final projects = snapshot.data!;
-                                        return LineChart(
-                                          LineChartData(
-                                            // Define your chart data here
-                                            titlesData: FlTitlesData(
-                                              show: true,
-                                              bottomTitles: SideTitles(
-                                                showTitles: true,
-                                                getTextStyles:
-                                                    (context, value) =>
-                                                        const TextStyle(
-                                                  color: Color(0xff7589a2),
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                                margin: 20,
-                                                getTitles: (double value) {
-                                                  final index = value.toInt();
-                                                  if (index >= 0 &&
-                                                      index < projects.length) {
-                                                    return projects[index]
-                                                        ['nama_pelanggan'];
-                                                  } else {
-                                                    return '';
-                                                  }
-                                                },
-                                              ),
-                                              leftTitles: SideTitles(
-                                                showTitles: true,
-                                                getTextStyles:
-                                                    (context, value) =>
-                                                        const TextStyle(
-                                                  color: Color(0xff7589a2),
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                                margin: 32,
-                                                reservedSize: 14,
-                                                getTitles: (value) {
-                                                  if (value == 0) {
-                                                    return '0';
-                                                  } else if (value % 100 == 0) {
-                                                    return '${value.toInt()}';
-                                                  } else {
-                                                    return '';
-                                                  }
-                                                },
-                                              ),
-                                            ),
-                                            borderData: FlBorderData(
-                                              show: true,
-                                              border: Border.all(
-                                                color: const Color(0xff37434d),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            gridData: FlGridData(
-                                              show: true,
-                                              drawVerticalLine: true,
-                                              horizontalInterval: 100,
-                                              getDrawingHorizontalLine:
-                                                  (value) {
-                                                return FlLine(
-                                                  color: Colors.grey,
-                                                  strokeWidth: 0.5,
-                                                );
-                                              },
-                                              verticalInterval: 1,
-                                              getDrawingVerticalLine: (value) {
-                                                return FlLine(
-                                                  color: Colors.grey,
-                                                  strokeWidth: 0.5,
-                                                );
-                                              },
-                                            ),
-                                            lineBarsData: [
-                                              LineChartBarData(
-                                                spots: projects
-                                                    .asMap()
-                                                    .entries
-                                                    .map((entry) {
-                                                  final index = entry.key;
-                                                  final project = entry.value;
-                                                  return FlSpot(
-                                                    index.toDouble(),
-                                                    double.tryParse(
-                                                            '${project['nilai_perkerjaan_rkap']}') ??
-                                                        0.0,
-                                                  );
-                                                }).toList(),
-                                                isCurved: true,
-                                                colors: [
-                                                  Colors.lightBlueAccent
-                                                      .withOpacity(0.8),
-                                                ],
-                                                barWidth: 2,
-                                                isStrokeCapRound: true,
-                                                belowBarData:
-                                                    BarAreaData(show: false),
-                                              ),
-                                              LineChartBarData(
-                                                spots: projects
-                                                    .asMap()
-                                                    .entries
-                                                    .map((entry) {
-                                                  final index = entry.key;
-                                                  final project = entry.value;
-                                                  return FlSpot(
-                                                    index.toDouble(),
-                                                    double.tryParse(
-                                                            '${project['nilai_pekerjaan_aktual']}') ??
-                                                        0.0,
-                                                  );
-                                                }).toList(),
-                                                isCurved: true,
-                                                colors: [
-                                                  Colors.red.withOpacity(0.8),
-                                                ],
-                                                barWidth: 2,
-                                                isStrokeCapRound: true,
-                                                belowBarData:
-                                                    BarAreaData(show: false),
-                                              ),
-                                              LineChartBarData(
-                                                spots: projects
-                                                    .asMap()
-                                                    .entries
-                                                    .map((entry) {
-                                                  final index = entry.key;
-                                                  final project = entry.value;
-                                                  return FlSpot(
-                                                    index.toDouble(),
-                                                    double.tryParse(
-                                                            '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}') ??
-                                                        0.0,
-                                                  );
-                                                }).toList(),
-                                                isCurved: true,
-                                                colors: [
-                                                  Colors.green.withOpacity(0.8),
-                                                ],
-                                                barWidth: 2,
-                                                isStrokeCapRound: true,
-                                                belowBarData:
-                                                    BarAreaData(show: false),
-                                              ),
-                                            ],
-                                            clipData: FlClipData.none(),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ProjectsPage()),
-                                        );
-                                      },
-                                      child: Text(
-                                        'View',
-                                        style: TextStyle(
-                                          color: Colors.white,
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 20,
+                            child: Text(
+                              'Projects',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                height: 1.5,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 40,
+                            left: 0,
+                            right: 10,
+                            child: SizedBox(
+                              height: 300,
+                              width: 400,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: BarChart(
+                                  BarChartData(
+                                    alignment: BarChartAlignment.spaceAround,
+                                    maxY: _projects.length.toDouble(),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      bottomTitles: SideTitles(
+                                        showTitles: true,
+                                        getTextStyles: (context, value) =>
+                                            TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
                                         ),
+                                        margin: 50,
+                                        getTitles: (double value) {
+                                          switch (value.toInt()) {
+                                            case 0:
+                                              return 'Ppe';
+                                            case 1:
+                                              return 'Fu';
+                                            case 2:
+                                              return 'Imp';
+                                            case 3:
+                                              return 'bYR';
+                                            case 4:
+                                              return 'Selesai';
+                                            default:
+                                              return '';
+                                          }
+                                        },
                                       ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            Color.fromARGB(204, 34, 45, 78),
+                                      leftTitles: SideTitles(showTitles: false),
+                                    ),
+                                    borderData: FlBorderData(show: false),
+                                    barGroups: [
+                                      for (var i = 0; i < statuses.length; i++)
+                                        BarChartGroupData(
+                                          x: i,
+                                          barRods: [
+                                            BarChartRodData(
+                                              y: _projects
+                                                  .where((project) =>
+                                                      project['status'] ==
+                                                      statuses[i])
+                                                  .length
+                                                  .toDouble(),
+                                              colors: [Colors.blue],
+                                            ),
+                                          ],
+                                          showingTooltipIndicators: [0],
+                                        ),
+                                    ],
+                                    barTouchData: BarTouchData(
+                                      touchTooltipData: BarTouchTooltipData(
+                                        tooltipBgColor: Colors.transparent,
+                                        getTooltipItem:
+                                            (group, groupIndex, rod, rodIndex) {
+                                          final totalCount = _projects
+                                              .where((project) =>
+                                                  project['status'] ==
+                                                  statuses[group.x.toInt()])
+                                              .length;
+                                          return BarTooltipItem(
+                                            '$totalCount',
+                                            TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                            children: [],
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 10,
+                            right: 10,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ProjectsPage()),
+                                  );
+                                },
+                                child: Text(
+                                  'View',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      Color.fromARGB(204, 34, 45, 78),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-
                       SizedBox(width: 35), // Jarak antara kotak
                       // Kotak 2
 
@@ -358,6 +405,23 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           Positioned(
+                            top: 40,
+                            left: 20,
+                            child: SizedBox(
+                              height: 320,
+                              width: 300,
+                              child: PieChart(
+                                PieChartData(
+                                  sections: sections,
+                                  borderData: FlBorderData(show: false),
+                                  centerSpaceRadius: 33,
+                                  sectionsSpace: 1,
+                                  startDegreeOffset: 180,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
                             bottom: 10,
                             right: 10,
                             child: ClipRRect(
@@ -387,8 +451,8 @@ class _HomePageState extends State<HomePage> {
                       ),
 
                       SizedBox(width: 35), // Jarak antara kotak
+                      //box3
 
-                      // Kotak 3
                       Stack(
                         children: [
                           Container(
@@ -416,6 +480,21 @@ class _HomePageState extends State<HomePage> {
                                 fontFamily: 'Poppins',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
+                                height: 1.5,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          // Add this Text widget to display the total number of customers
+                          Positioned(
+                            top: 50,
+                            left: 20,
+                            child: Text(
+                              'Total: ${_totalCustomers}', // Assuming `_produks` contains customer data
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 19,
+                                fontWeight: FontWeight.w500,
                                 height: 1.5,
                                 color: Colors.black,
                               ),
@@ -459,7 +538,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 30),
               Container(
                 width: 350,
-                height: 790,
+                height: 750,
                 padding:
                     const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
                 decoration: BoxDecoration(
@@ -476,6 +555,17 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Column(
                   children: [
+                    // Teks Kalender
+                    Text(
+                      'Calendar',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 25,
+                        fontWeight: FontWeight.w700,
+                        height: 1.5,
+                        color: Colors.black,
+                      ),
+                    ),
                     // Kalender
                     TableCalendar(
                       firstDay: DateTime.utc(2022, 1, 1),
@@ -492,92 +582,117 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                     const SizedBox(height: 20),
-
-                    // My Task/To Do List
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.5),
-                              spreadRadius: 5,
-                              blurRadius: 7,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
+                    Container(
+                      width: 300,
+                      height: 300, // Atur tinggi sesuai kebutuhan Anda
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 5,
+                            blurRadius: 7,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                            16.0), // Tambahkan padding jika diperlukan
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Baris header
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 10), // Perkecil jarak vertikal
-                              height: 60,
-                              decoration: const BoxDecoration(
-                                color: const Color.fromARGB(204, 34, 45, 78),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  topRight: Radius.circular(10),
+                            Center(
+                              // Menempatkan teks di tengah
+                              child: Text(
+                                'My Task',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.5,
+                                  color: Colors.black,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment
-                                    .center, // Ganti dengan MainAxisAlignment.center
+                            ),
+                            SizedBox(
+                              height: 5, // Jarak antara teks dan to-do list
+                            ),
+                            Expanded(
+                              // Gunakan Expanded untuk memberikan ruang bagi daftar tugas
+                              child: ListView(
                                 children: [
-                                  const Text(
-                                    "Today’s Tasks",
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.5,
-                                      color: Color.fromARGB(255, 255, 255, 255),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AddTaskDialog(
-                                          onTaskAdded: addTask,
+                                  // To-Do List
+                                  Column(
+                                    children:
+                                        tasks.asMap().entries.map((entry) {
+                                      int index = entry.key;
+                                      String task = entry.value;
+                                      return ListTile(
+                                        leading: IconButton(
+                                          // Menggunakan IconButton sebagai ganti Checkbox
+                                          icon: Icon(Icons
+                                              .edit), // Menggunakan icon edit
+                                          onPressed: () {
+                                            _taskEditingController.text =
+                                                task; // Mengatur teks pada TextField ketika tombol edit ditekan
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: Text('Edit Task'),
+                                                content: TextField(
+                                                  controller:
+                                                      _taskEditingController, // Menggunakan controller untuk mengontrol teks
+                                                  decoration: InputDecoration(
+                                                    hintText:
+                                                        'Masukkan task baru',
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text('Batal'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        tasks[index] =
+                                                            _taskEditingController
+                                                                .text; // Mengupdate nilai task
+                                                      });
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text('Simpan'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        title: Text(task),
+                                        trailing: IconButton(
+                                          icon: Icon(Icons.delete),
+                                          onPressed: () {
+                                            deleteTask(index);
+                                          },
                                         ),
                                       );
-                                    },
-                                    child: const Icon(
-                                      Icons.add,
-                                      color: Colors.white,
-                                    ),
+                                    }).toList(),
                                   ),
                                 ],
                               ),
                             ),
-
-                            // Daftar task
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 10), // Perkecil jarak vertikal
-                                itemCount: tasks.length,
-                                itemBuilder: (context, index) {
-                                  return TaskTile(
-                                    taskTitle: tasks[index],
-                                    isChecked: false,
-                                    checkboxCallback: (checkboxState) {
-                                      setState(() {
-                                        // tasks[index].toggleDone();
-                                      });
-                                    },
-                                    longPressCallback: () {
-                                      setState(() {
-                                        removeTask(index);
-                                      });
-                                    },
-                                  );
+                            // Form untuk menambahkan task baru
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  _showAddTaskDialog(context);
                                 },
+                                child: Text('Tambah Task'),
                               ),
                             ),
                           ],
@@ -587,7 +702,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -634,100 +749,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> fetchProjectsFromDatabase() async {
-    final settings = ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
-    );
-
-    try {
-      final _connection = await MySqlConnection.connect(settings);
-      var results = await _connection.query('SELECT * FROM projects');
-      await _connection.close();
-
-      // Mengonversi setiap ResultRow menjadi Map<String, dynamic>
-      return results.map((row) => row.fields).toList();
-    } catch (e) {
-      print('Error: $e');
-      return [];
-    }
-  }
-}
-
-class AddTaskDialog extends StatelessWidget {
-  final Function(String) onTaskAdded;
-
-  const AddTaskDialog({required this.onTaskAdded});
-
-  @override
-  Widget build(BuildContext context) {
-    String newTaskTitle = '';
-
-    return AlertDialog(
-      title: const Text('Add Task'),
-      content: TextField(
-        autofocus: true,
-        onChanged: (newText) {
-          newTaskTitle = newText;
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            onTaskAdded(newTaskTitle);
-            Navigator.of(context).pop();
-          },
-          child: const Text('Add'),
-        ),
-      ],
-    );
-  }
-}
-
-class TaskTile extends StatelessWidget {
-  final bool isChecked;
-  final String taskTitle;
-  final Function(bool?) checkboxCallback;
-  final Function() longPressCallback;
-
-  TaskTile({
-    required this.isChecked,
-    required this.taskTitle,
-    required this.checkboxCallback,
-    required this.longPressCallback,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onLongPress: longPressCallback,
-      title: Text(
-        taskTitle,
-        style: TextStyle(
-          fontFamily: 'Poppins',
-          fontSize: 20,
-          fontWeight: FontWeight.w500,
-          color: Colors.black,
-          decoration: isChecked ? TextDecoration.lineThrough : null,
-        ),
-      ),
-      trailing: Checkbox(
-        activeColor: const Color.fromARGB(204, 34, 45, 78),
-        value: isChecked,
-        onChanged: checkboxCallback,
       ),
     );
   }

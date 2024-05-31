@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
 
+import 'detail_projects.dart';
+
 class ProjectsPage extends StatefulWidget {
   @override
   _ProjectsPageState createState() => _ProjectsPageState();
@@ -10,8 +12,16 @@ class ProjectsPage extends StatefulWidget {
 class _ProjectsPageState extends State<ProjectsPage> {
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _projects = [];
+  List<Map<String, dynamic>> _filteredProjects = [];
   TextEditingController _searchController = TextEditingController();
-  double _scrollPosition = 0.0;
+
+  List<String> statuses = [
+    'Postpone',
+    'Follow Up',
+    'Implementasi',
+    'Payment',
+    'Finished'
+  ];
 
   @override
   void initState() {
@@ -21,25 +31,29 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
   Future<void> _connectToDB() async {
     final settings = ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
     );
 
     try {
       _connection = await MySqlConnection.connect(settings);
-      var results = await _connection.query('SELECT * FROM projects');
-
-      results.forEach((row) {
-        _projects.add(Map<String, dynamic>.from(row.fields));
-      });
-
+      await _fetchProjectsFromDB();
       setState(() {});
     } catch (e) {
       print('Error connecting to database: $e');
     }
+  }
+
+  Future<void> _fetchProjectsFromDB() async {
+    var results = await _connection.query('SELECT * FROM projects');
+
+    _projects.clear();
+    results.forEach((row) {
+      _projects.add(Map<String, dynamic>.from(row.fields));
+    });
   }
 
   @override
@@ -49,16 +63,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _filteredProjects = [];
-
   @override
   Widget build(BuildContext context) {
-    _filteredProjects = _projects.where((project) {
-      final customerName = project['nama_pelanggan'].toString().toLowerCase();
-      final searchText = _searchController.text.toLowerCase();
-      return customerName.contains(searchText);
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 195, 211, 227),
       body: Column(
@@ -106,228 +112,111 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  height: 450,
-                  child: AspectRatio(
-                    aspectRatio: 1.2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.5),
+                        spreadRadius: 5,
+                        blurRadius: 7,
+                        offset: const Offset(0, 3),
                       ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.all(10),
+                  height: 300,
+                  width: MediaQuery.of(context).size.width * 1.5,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      height: 300,
+                      width: MediaQuery.of(context).size.width * 1.5,
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: LineChart(
-                                LineChartData(
-                                  minX: 0,
-                                  maxX: _filteredProjects.length.toDouble() - 1,
-                                  minY: 0,
-                                  maxY: 600,
-                                  titlesData: FlTitlesData(
-                                    show: true,
-                                    bottomTitles: SideTitles(
-                                      showTitles: true,
-                                      getTextStyles: (context, value) =>
-                                          const TextStyle(
-                                        color: Color(0xff7589a2),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      margin: 20,
-                                      getTitles: (double value) {
-                                        final index =
-                                            (value + _scrollPosition).toInt();
-                                        if (index >= 0 &&
-                                            index < _filteredProjects.length) {
-                                          return _filteredProjects[index]
-                                              ['nama_pelanggan'];
-                                        } else {
-                                          return '';
-                                        }
-                                      },
-                                    ),
-                                    leftTitles: SideTitles(
-                                      showTitles: true,
-                                      getTextStyles: (context, value) =>
-                                          const TextStyle(
-                                        color: Color(0xff7589a2),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      margin: 32,
-                                      reservedSize: 14,
-                                      getTitles: (value) {
-                                        if (value == 0) {
-                                          return '0';
-                                        } else if (value % 100 == 0) {
-                                          return '${value.toInt()}';
-                                        } else {
-                                          return '';
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  borderData: FlBorderData(
-                                    show: true,
-                                    border: Border.all(
-                                      color: const Color(0xff37434d),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  gridData: FlGridData(
-                                    show: true,
-                                    drawVerticalLine: true,
-                                    horizontalInterval: 100,
-                                    getDrawingHorizontalLine: (value) {
-                                      return FlLine(
-                                        color: Colors.grey,
-                                        strokeWidth: 0.5,
-                                      );
-                                    },
-                                    verticalInterval: 1,
-                                    getDrawingVerticalLine: (value) {
-                                      return FlLine(
-                                        color: Colors.grey,
-                                        strokeWidth: 0.5,
-                                      );
-                                    },
-                                  ),
-                                  lineBarsData: [
-                                    LineChartBarData(
-                                      spots: _filteredProjects
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
-                                        final index = entry.key;
-                                        final project = entry.value;
-                                        return FlSpot(
-                                          index.toDouble(),
-                                          double.tryParse(
-                                                  '${project['nilai_perkerjaan_rkap']}') ??
-                                              0.0,
-                                        );
-                                      }).toList(),
-                                      isCurved: true,
-                                      colors: [
-                                        Colors.lightBlueAccent.withOpacity(0.8),
-                                      ],
-                                      barWidth: 2,
-                                      isStrokeCapRound: true,
-                                      belowBarData: BarAreaData(show: false),
-                                    ),
-                                    LineChartBarData(
-                                      spots: _filteredProjects
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
-                                        final index = entry.key;
-                                        final project = entry.value;
-                                        return FlSpot(
-                                          index.toDouble(),
-                                          double.tryParse(
-                                                  '${project['nilai_pekerjaan_aktual']}') ??
-                                              0.0,
-                                        );
-                                      }).toList(),
-                                      isCurved: true,
-                                      colors: [
-                                        Colors.red.withOpacity(0.8),
-                                      ],
-                                      barWidth: 2,
-                                      isStrokeCapRound: true,
-                                      belowBarData: BarAreaData(show: false),
-                                    ),
-                                    LineChartBarData(
-                                      spots: _filteredProjects
-                                          .asMap()
-                                          .entries
-                                          .map((entry) {
-                                        final index = entry.key;
-                                        final project = entry.value;
-                                        return FlSpot(
-                                          index.toDouble(),
-                                          double.tryParse(
-                                                  '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}') ??
-                                              0.0,
-                                        );
-                                      }).toList(),
-                                      isCurved: true,
-                                      colors: [
-                                        Colors.green.withOpacity(0.8),
-                                      ],
-                                      barWidth: 2,
-                                      isStrokeCapRound: true,
-                                      belowBarData: BarAreaData(show: false),
+                        padding: const EdgeInsets.all(8.0),
+                        child: BarChart(
+                          BarChartData(
+                            alignment: BarChartAlignment.spaceAround,
+                            maxY: _projects.length.toDouble(),
+                            titlesData: FlTitlesData(
+                              show: true,
+                              bottomTitles: SideTitles(
+                                showTitles: true,
+                                getTextStyles: (context, value) => TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                margin:
+                                    40, // Ubah nilai margin sesuai kebutuhan Anda
+                                getTitles: (double value) {
+                                  switch (value.toInt()) {
+                                    case 0:
+                                      return 'Postpone';
+                                    case 1:
+                                      return 'Follow Up';
+                                    case 2:
+                                      return 'Implementasi';
+                                    case 3:
+                                      return 'Payment';
+                                    case 4:
+                                      return 'Finished';
+                                    default:
+                                      return '';
+                                  }
+                                },
+                              ),
+                              leftTitles: SideTitles(showTitles: false),
+                            ),
+                            borderData: FlBorderData(show: false),
+                            barGroups: [
+                              for (var i = 0; i < statuses.length; i++)
+                                BarChartGroupData(
+                                  x: i,
+                                  barRods: [
+                                    BarChartRodData(
+                                      y: _projects
+                                          .where((project) =>
+                                              project['status'] == statuses[i])
+                                          .length
+                                          .toDouble(),
+                                      colors: [Colors.blue],
                                     ),
                                   ],
-                                  clipData: FlClipData.all(),
+                                  showingTooltipIndicators: [0],
                                 ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                                vertical: 8.0,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Ket:',
-                                    style: TextStyle(
+                            ],
+                            barTouchData: BarTouchData(
+                              touchTooltipData: BarTouchTooltipData(
+                                tooltipBgColor: Colors.transparent,
+                                getTooltipItem:
+                                    (group, groupIndex, rod, rodIndex) {
+                                  final totalCount = _projects
+                                      .where((project) =>
+                                          project['status'] ==
+                                          statuses[group.x.toInt()])
+                                      .length;
+                                  return BarTooltipItem(
+                                    '$totalCount',
+                                    TextStyle(
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16.0,
+                                      fontSize: 14,
                                     ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 10,
-                                        color: Colors.lightBlueAccent
-                                            .withOpacity(0.8),
-                                      ),
-                                      SizedBox(width: 5),
-                                      Text('Nilai Pekerjaan RKAP'),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 10,
-                                        color: Colors.red.withOpacity(0.8),
-                                      ),
-                                      SizedBox(width: 5),
-                                      Text('Nilai Pekerjaan Aktual'),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: 10,
-                                        color: Colors.green.withOpacity(0.8),
-                                      ),
-                                      SizedBox(width: 5),
-                                      Text(
-                                          'Nilai Pekerjaan Kontrak Tahun Berjalan'),
-                                    ],
-                                  ),
-                                ],
+                                    children: [],
+                                  );
+                                },
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
@@ -351,7 +240,13 @@ class _ProjectsPageState extends State<ProjectsPage> {
                             ),
                           ),
                           onChanged: (value) {
-                            setState(() {});
+                            setState(() {
+                              _filteredProjects = _projects
+                                  .where((project) => project['nama_pekerjaan']
+                                      .toLowerCase()
+                                      .contains(value.toLowerCase()))
+                                  .toList();
+                            });
                           },
                         ),
                       ),
@@ -395,53 +290,151 @@ class _ProjectsPageState extends State<ProjectsPage> {
                               DataColumn(label: Text('Created At')),
                               DataColumn(label: Text('Updated At')),
                             ],
-                            rows: _filteredProjects.map((project) {
-                              return DataRow(
-                                color: MaterialStateColor.resolveWith(
-                                    (states) =>
-                                        Color.fromARGB(255, 244, 223, 188)),
-                                cells: [
-                                  DataCell(Text('${project['id']}')),
-                                  DataCell(Text('${project['status']}')),
-                                  DataCell(Text('${project['customer_id']}')),
-                                  DataCell(
-                                      Text('${project['nama_pelanggan']}')),
-                                  DataCell(Text('${project['product_id']}')),
-                                  DataCell(Text('${project['jenis_layanan']}')),
-                                  DataCell(
-                                      Text('${project['nama_pekerjaan']}')),
-                                  DataCell(Text(
-                                      '${project['nilai_perkerjaan_rkap']}')),
-                                  DataCell(Text(
-                                      '${project['nilai_pekerjaan_aktual']}')),
-                                  DataCell(Text(
-                                      '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
-                                  DataCell(
-                                      Text('${project['plan_start_date']}')),
-                                  DataCell(Text('${project['plan_end_date']}')),
-                                  DataCell(
-                                      Text('${project['actual_start_date']}')),
-                                  DataCell(
-                                      Text('${project['actual_end_date']}')),
-                                  DataCell(
-                                      Text('${project['account_marketing']}')),
-                                  DataCell(Text('${project['dirut']}')),
-                                  DataCell(Text('${project['dirop']}')),
-                                  DataCell(Text('${project['dirke']}')),
-                                  DataCell(Text('${project['kskmr']}')),
-                                  DataCell(Text('${project['ksham']}')),
-                                  DataCell(Text('${project['msdmu']}')),
-                                  DataCell(Text('${project['mkakt']}')),
-                                  DataCell(Text('${project['mbilp']}')),
-                                  DataCell(Text('${project['mppti']}')),
-                                  DataCell(Text('${project['mopti']}')),
-                                  DataCell(Text('${project['mbsar']}')),
-                                  DataCell(Text('${project['msadb']}')),
-                                  DataCell(Text('${project['created_at']}')),
-                                  DataCell(Text('${project['updated_at']}')),
-                                ],
-                              );
-                            }).toList(),
+                            rows: _searchController.text.isNotEmpty
+                                ? _filteredProjects.map((project) {
+                                    return DataRow(
+                                      color: MaterialStateColor.resolveWith(
+                                          (states) => Color.fromARGB(
+                                              255, 244, 223, 188)),
+                                      cells: [
+                                        DataCell(Text('${project['id']}')),
+                                        DataCell(Text('${project['status']}')),
+                                        DataCell(
+                                            Text('${project['customer_id']}')),
+                                        DataCell(Text(
+                                            '${project['nama_pelanggan']}')),
+                                        DataCell(
+                                            Text('${project['product_id']}')),
+                                        DataCell(Text(
+                                            '${project['jenis_layanan']}')),
+                                        DataCell(
+                                          GestureDetector(
+                                            child: Text(
+                                                '${project['nama_pekerjaan']}'),
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      DetailProjectsPage(
+                                                    projectId: project['id'],
+                                                    namaPekerjaan:
+                                                        '${project['nama_pekerjaan']}',
+                                                    statusPekerjaan:
+                                                        '${project['status']}',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        DataCell(Text(
+                                            '${project['nilai_perkerjaan_rkap']}')),
+                                        DataCell(Text(
+                                            '${project['nilai_pekerjaan_aktual']}')),
+                                        DataCell(Text(
+                                            '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
+                                        DataCell(Text(
+                                            '${project['plan_start_date']}')),
+                                        DataCell(Text(
+                                            '${project['plan_end_date']}')),
+                                        DataCell(Text(
+                                            '${project['actual_start_date']}')),
+                                        DataCell(Text(
+                                            '${project['actual_end_date']}')),
+                                        DataCell(Text(
+                                            '${project['account_marketing']}')),
+                                        DataCell(Text('${project['dirut']}')),
+                                        DataCell(Text('${project['dirop']}')),
+                                        DataCell(Text('${project['dirke']}')),
+                                        DataCell(Text('${project['kskmr']}')),
+                                        DataCell(Text('${project['ksham']}')),
+                                        DataCell(Text('${project['msdmu']}')),
+                                        DataCell(Text('${project['mkakt']}')),
+                                        DataCell(Text('${project['mbilp']}')),
+                                        DataCell(Text('${project['mppti']}')),
+                                        DataCell(Text('${project['mopti']}')),
+                                        DataCell(Text('${project['mbsar']}')),
+                                        DataCell(Text('${project['msadb']}')),
+                                        DataCell(
+                                            Text('${project['created_at']}')),
+                                        DataCell(
+                                            Text('${project['updated_at']}')),
+                                      ],
+                                    );
+                                  }).toList()
+                                : _projects.map((project) {
+                                    return DataRow(
+                                      color: MaterialStateColor.resolveWith(
+                                          (states) => Color.fromARGB(
+                                              255, 244, 223, 188)),
+                                      cells: [
+                                        DataCell(Text('${project['id']}')),
+                                        DataCell(Text('${project['status']}')),
+                                        DataCell(
+                                            Text('${project['customer_id']}')),
+                                        DataCell(Text(
+                                            '${project['nama_pelanggan']}')),
+                                        DataCell(
+                                            Text('${project['product_id']}')),
+                                        DataCell(Text(
+                                            '${project['jenis_layanan']}')),
+                                        DataCell(
+                                          GestureDetector(
+                                            child: Text(
+                                                '${project['nama_pekerjaan']}'),
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      DetailProjectsPage(
+                                                    projectId: project['id'],
+                                                    namaPekerjaan:
+                                                        '${project['nama_pekerjaan']}',
+                                                    statusPekerjaan:
+                                                        '${project['status']}',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        DataCell(Text(
+                                            '${project['nilai_perkerjaan_rkap']}')),
+                                        DataCell(Text(
+                                            '${project['nilai_pekerjaan_aktual']}')),
+                                        DataCell(Text(
+                                            '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
+                                        DataCell(Text(
+                                            '${project['plan_start_date']}')),
+                                        DataCell(Text(
+                                            '${project['plan_end_date']}')),
+                                        DataCell(Text(
+                                            '${project['actual_start_date']}')),
+                                        DataCell(Text(
+                                            '${project['actual_end_date']}')),
+                                        DataCell(Text(
+                                            '${project['account_marketing']}')),
+                                        DataCell(Text('${project['dirut']}')),
+                                        DataCell(Text('${project['dirop']}')),
+                                        DataCell(Text('${project['dirke']}')),
+                                        DataCell(Text('${project['kskmr']}')),
+                                        DataCell(Text('${project['ksham']}')),
+                                        DataCell(Text('${project['msdmu']}')),
+                                        DataCell(Text('${project['mkakt']}')),
+                                        DataCell(Text('${project['mbilp']}')),
+                                        DataCell(Text('${project['mppti']}')),
+                                        DataCell(Text('${project['mopti']}')),
+                                        DataCell(Text('${project['mbsar']}')),
+                                        DataCell(Text('${project['msadb']}')),
+                                        DataCell(
+                                            Text('${project['created_at']}')),
+                                        DataCell(
+                                            Text('${project['updated_at']}')),
+                                      ],
+                                    );
+                                  }).toList(),
                           ),
                         ),
                       ),

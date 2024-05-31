@@ -9,6 +9,7 @@ class List_CustomerPage extends StatefulWidget {
 class _List_CustomerPageState extends State<List_CustomerPage> {
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _customers = [];
+  List<Map<String, dynamic>> _filteredCustomers = [];
   TextEditingController _searchController = TextEditingController();
 
   @override
@@ -19,11 +20,11 @@ class _List_CustomerPageState extends State<List_CustomerPage> {
 
   Future<void> _connectToDB() async {
     final settings = ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
     );
 
     try {
@@ -34,6 +35,9 @@ class _List_CustomerPageState extends State<List_CustomerPage> {
       results.forEach((row) {
         _customers.add(Map<String, dynamic>.from(row.fields));
       });
+
+      // Assign _customers to _filteredCustomers initially
+      _filteredCustomers = List.from(_customers);
 
       setState(() {});
     } catch (e) {
@@ -48,12 +52,10 @@ class _List_CustomerPageState extends State<List_CustomerPage> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _filteredCustomers = [];
-
   @override
   Widget build(BuildContext context) {
+    // Filter the customers based on search text
     _filteredCustomers = _customers.where((customer) {
-      // Filter by nama_pelanggan
       final namaPelanggan = customer['nama_pelanggan'].toString().toLowerCase();
       final searchText = _searchController.text.toLowerCase();
       return namaPelanggan.contains(searchText);

@@ -41,11 +41,11 @@ class RegisterPage extends StatelessWidget {
     String hashedPassword = _hashPassword(password);
 
     final settings = mysql.ConnectionSettings(
-      host: '8dd.h.filess.io',
-      port: 3307,
-      user: 'TATelkom_smoothpony',
-      password: '4a0dac89cd2241531033a2dcfacec6e831894384',
-      db: 'TATelkom_smoothpony',
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
     );
 
     final conn = await mysql.MySqlConnection.connect(settings);
@@ -395,11 +395,37 @@ class RegisterPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: ElevatedButton(
                     onPressed: () {
-                      _registerUser(username, email, password, role);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                      );
+                      if (username.isEmpty ||
+                          email.isEmpty ||
+                          password.isEmpty ||
+                          role.isEmpty) {
+                        // Menampilkan pesan kesalahan jika ada input yang kosong
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('Register tidak berhasil'),
+                              content: Text(
+                                  'Harap isi semua data sebelum melanjutkan'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Ok'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } else {
+                        // Jika semua input telah diisi, lanjutkan dengan proses registrasi
+                        _registerUser(username, email, password, role);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                        );
+                      }
                     },
                     child: Text(
                       'Register',
