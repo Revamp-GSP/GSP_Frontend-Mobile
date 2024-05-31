@@ -97,7 +97,7 @@ class ContentTask extends StatelessWidget {
                   DataCell(Text(project['plan_date_end'].toString())),
                   DataCell(Text(project['actual_date_start'].toString())),
                   DataCell(Text(project['actual_date_end'].toString())),
-                  DataCell(Text(project['dokumen'].toString())),
+                  DataCell(Text(project['dokumen_output'].toString())),
                   DataCell(Text(project['pic'].toString())),
                   DataCell(Text(project['divisi_terkait'].toString())),
                   DataCell(Text(project['keterangan'].toString())),
@@ -175,9 +175,17 @@ class _DetailProjectsPageState extends State<DetailProjectsPage> {
           'SELECT * FROM tasks WHERE project_id = ?', [widget.projectId]);
       final List<Map<String, dynamic>> tasksData =
           results.map((row) => row.fields).toList();
+
+      // Group tasks by their corresponding key in _toggleState
+      final Map<String, List<Map<String, dynamic>>> groupedTasks = {};
+      for (var task in _toggleState.keys) {
+        groupedTasks[task] = tasksData
+            .where((taskData) => taskData['nama_task'] == task)
+            .toList();
+      }
+
       setState(() {
-        _taskProjects = {'Permintaan Penawaran Harga User': tasksData};
-        // Ganti 'Permintaan Penawaran Harga User' dengan key yang sesuai dari _toggleState
+        _taskProjects = groupedTasks;
       });
     } catch (e) {
       print('Gagal mengambil data dari database: $e');
@@ -240,19 +248,32 @@ class _DetailProjectsPageState extends State<DetailProjectsPage> {
               ],
             ),
             SizedBox(height: 20),
-            Text(
-              'Nama Pekerjaan: ${widget.namaPekerjaan}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'Status: ${getStatusWithPercentage(widget.statusPekerjaan)}',
-              style: TextStyle(
-                fontSize: 16,
-                fontStyle: FontStyle.normal,
-                color: Colors.black,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0), // Sesuaikan nilai padding sesuai kebutuhan
+              child: Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      'Nama Pekerjaan: ${widget.namaPekerjaan}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center, // Pastikan teks di tengah
+                    ),
+                    Text(
+                      'Status: ${getStatusWithPercentage(widget.statusPekerjaan)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontStyle: FontStyle.normal,
+                        color: Colors.black,
+                      ),
+                      textAlign: TextAlign.center, // Pastikan teks di tengah
+                    ),
+                  ],
+                ),
               ),
             ),
             SizedBox(height: 20),
