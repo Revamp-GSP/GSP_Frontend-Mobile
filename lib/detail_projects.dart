@@ -190,12 +190,12 @@ class _DetailProjectsPageState extends State<DetailProjectsPage> {
         return 'Postpone (20%)';
       case 'Follow Up':
         return 'Follow Up (40%)';
-      case 'Implementation':
-        return 'Implementation (60%)';
-      case 'Pembayaran':
-        return 'Pembayaran (80%)';
-      case 'Selesai':
-        return 'Selesai (100%)';
+      case 'Implementasi':
+        return 'Implementasi (60%)';
+      case 'Payment':
+        return 'Payment (80%)';
+      case 'Finished':
+        return 'Finished (100%)';
       default:
         return status;
     }
