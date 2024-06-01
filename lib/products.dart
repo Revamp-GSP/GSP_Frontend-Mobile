@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:mysql1/mysql1.dart';
-import 'package:random_color/random_color.dart';
 
 class ProductsPage extends StatefulWidget {
   @override
@@ -12,7 +11,6 @@ class _ProductsPageState extends State<ProductsPage> {
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _produks = [];
   TextEditingController _searchController = TextEditingController();
-  RandomColor _randomColor = RandomColor();
   List<Map<String, dynamic>> _filteredProduks = [];
 
   @override
@@ -81,10 +79,24 @@ class _ProductsPageState extends State<ProductsPage> {
 
     // Membuat list dari data untuk chart
     List<PieChartSectionData> sections = [];
+    List<Color> colors = [
+      Color(0xFFAED581), // Light Green
+      Color(0xFF4FC3F7), // Light Blue
+      Color(0xFFFFF176), // Light Yellow
+      Color(0xFFBA68C8), // Light Purple
+      Color(0xFFFF8A65), // Light Orange
+      Color(0xFF81C784), // Green
+      Color(0xFF64B5F6), // Blue
+      Color(0xFFFFD54F), // Yellow
+      Color(0xFFDCE775), // Lemon Green
+      Color(0xFF9575CD), // Purple
+    ];
+    int colorIndex = 0;
+
     serviceFrequency.forEach((serviceName, frequency) {
       sections.add(
         PieChartSectionData(
-          color: _randomColor.randomColor(),
+          color: colors[colorIndex % colors.length],
           value: frequency.toDouble(),
           title: '$serviceName\n($frequency)',
           radius: 115, // Atur besar kecilnya donut chart di sini
@@ -96,6 +108,7 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ),
       );
+      colorIndex++;
     });
 
     return Scaffold(

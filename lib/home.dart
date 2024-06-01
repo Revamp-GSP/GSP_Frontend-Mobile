@@ -6,7 +6,6 @@ import 'package:flutter_application_1/products.dart';
 import 'package:flutter_application_1/projects.dart';
 import 'package:mysql1/mysql1.dart' as mysql;
 import 'package:mysql1/mysql1.dart';
-import 'package:random_color/random_color.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'profile.dart';
@@ -38,7 +37,6 @@ class _HomePageState extends State<HomePage> {
   late TextEditingController _taskEditingController;
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _produks = [];
-  RandomColor _randomColor = RandomColor();
   List<Map<String, dynamic>> _projects = [];
   List<Map<String, dynamic>> _customers = [];
   int _totalCustomers = 0;
@@ -160,12 +158,28 @@ class _HomePageState extends State<HomePage> {
           ifAbsent: () => 1);
     });
 
+    // Define a list of fixed colors
+    final List<Color> fixedColors = [
+      Color(0xFFAED581), // Light Green
+      Color(0xFF4FC3F7), // Light Blue
+      Color(0xFFFFF176), // Light Yellow
+      Color(0xFFBA68C8), // Light Purple
+      Color(0xFFFF8A65), // Light Orange
+      Color(0xFF81C784), // Green
+      Color(0xFF64B5F6), // Blue
+      Color(0xFFFFD54F), // Yellow
+      Color(0xFFDCE775), // Lemon Green
+      Color(0xFF9575CD), // Purple
+    ];
+
     // Membuat list dari data untuk chart
     List<PieChartSectionData> sections = [];
+    int colorIndex = 0; // Index to keep track of color for each section
     serviceFrequency.forEach((serviceName, frequency) {
       sections.add(
         PieChartSectionData(
-          color: _randomColor.randomColor(),
+          color:
+              fixedColors[colorIndex % fixedColors.length], // Use fixed colors
           value: frequency.toDouble(),
           title: '$serviceName\n($frequency)',
           radius: 115, // Atur besar kecilnya donut chart di sini
@@ -177,7 +191,9 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       );
+      colorIndex++;
     });
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 195, 211, 227),
       body: SingleChildScrollView(
