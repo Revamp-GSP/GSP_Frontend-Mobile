@@ -310,7 +310,13 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                         DataCell(
                                           GestureDetector(
                                             child: Text(
-                                                '${project['nama_pekerjaan']}'),
+                                              '${project['nama_pekerjaan']}',
+                                              style: TextStyle(
+                                                color: Colors.blue,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
                                             onTap: () {
                                               Navigator.push(
                                                 context,
@@ -382,7 +388,14 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                         DataCell(
                                           GestureDetector(
                                             child: Text(
-                                                '${project['nama_pekerjaan']}'),
+                                              '${project['nama_pekerjaan']}',
+                                              style: TextStyle(
+                                                color: Color.fromARGB(
+                                                    255, 24, 97, 158),
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
                                             onTap: () {
                                               Navigator.push(
                                                 context,

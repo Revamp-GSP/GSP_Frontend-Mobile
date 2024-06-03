@@ -225,9 +225,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
               Container(
-                height: 400,
+                height: 510,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -240,7 +240,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Container(
                             width: 350,
-                            height: 400, // Atur tinggi sesuai kebutuhan Anda
+                            height: 550, // Atur tinggi sesuai kebutuhan Anda
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(15),
                               color: Colors.white,
@@ -295,15 +295,15 @@ class _HomePageState extends State<HomePage> {
                                         getTitles: (double value) {
                                           switch (value.toInt()) {
                                             case 0:
-                                              return 'Ppe';
+                                              return 'Pp'; // Postpone
                                             case 1:
-                                              return 'Fu';
+                                              return 'FU'; // Follow Up
                                             case 2:
-                                              return 'Imp';
+                                              return 'Imp'; // Implementasi
                                             case 3:
-                                              return 'bYR';
+                                              return 'Pb'; // Pembayaran
                                             case 4:
-                                              return 'Selesai';
+                                              return 'S'; // Selesai
                                             default:
                                               return '';
                                           }
@@ -358,6 +358,24 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           Positioned(
+                            top: 350,
+                            left: 20,
+                            right: 20,
+                            child: Text(
+                              'Ket:\n' +
+                                  'Pp: Postpone\n' +
+                                  'FU: Follow Up\n' +
+                                  'Imp: Implementasi\n' +
+                                  'Pb: Pembayaran\n' +
+                                  'S: Selesai',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 14,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          Positioned(
                             bottom: 10,
                             right: 10,
                             child: ClipRRect(
@@ -385,6 +403,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ],
                       ),
+
                       SizedBox(width: 35), // Jarak antara kotak
                       // Kotak 2
 
