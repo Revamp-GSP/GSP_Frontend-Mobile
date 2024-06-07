@@ -4,6 +4,7 @@ import 'package:flutter_application_1/inbox.dart';
 import 'package:flutter_application_1/list_customer.dart';
 import 'package:flutter_application_1/products.dart';
 import 'package:flutter_application_1/projects.dart';
+import 'package:intl/intl.dart';
 import 'package:mysql1/mysql1.dart' as mysql;
 import 'package:mysql1/mysql1.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -53,6 +54,11 @@ class _HomePageState extends State<HomePage> {
   List<bool> taskCompletionStatus = [];
   String newTask = '';
 
+  // Variables for totals
+  double totalKontrak = 0.0;
+  double totalAktual = 0.0;
+  double totalRkap = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +82,21 @@ class _HomePageState extends State<HomePage> {
       var results3 = await connection.query(
           'SELECT COUNT(DISTINCT nama_pelanggan) AS total FROM customers');
 
+      // Query total RKAP
+      var resultsRkap = await connection
+          .query('SELECT SUM(nilai_pekerjaan_rkap) AS totalRkap FROM projects');
+      totalRkap = resultsRkap.first['totalRkap'];
+
+      // Query total Aktual
+      var resultsAktual = await connection.query(
+          'SELECT SUM(nilai_pekerjaan_aktual) AS totalAktual FROM projects');
+      totalAktual = resultsAktual.first['totalAktual'];
+
+      // Query total Kontrak Tahun Berjalan
+      var resultsKontrak = await connection.query(
+          'SELECT SUM(nilai_pekerjaan_kontrak_tahun_berjalan) AS totalKontrak FROM projects');
+      totalKontrak = resultsKontrak.first['totalKontrak'];
+
       await connection.close();
 
       setState(() {
@@ -89,6 +110,9 @@ class _HomePageState extends State<HomePage> {
       });
       print('Error connecting to database: $e');
     }
+
+    // Pastikan setelah mendapatkan total nilai, setState untuk memperbarui UI
+    setState(() {});
   }
 
 // Method to show dialog for adding tasks
@@ -157,6 +181,8 @@ class _HomePageState extends State<HomePage> {
       serviceFrequency.update(serviceName, (value) => value + 1,
           ifAbsent: () => 1);
     });
+
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp');
 
     // Define a list of fixed colors
     final List<Color> fixedColors = [
@@ -227,6 +253,190 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
               Container(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 35), // Jarak awal
+
+                      // Kotak 1
+
+                      Stack(
+                        children: [
+                          Container(
+                            width: 350,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15),
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  spreadRadius: 5,
+                                  blurRadius: 7,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 20,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Total Nilai Pekerjaan RKAP',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  '${formatter.format(totalRkap)}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(width: 35), // Jarak antara kotak
+
+                      // Kotak 2
+                      Stack(
+                        children: [
+                          Container(
+                            width: 350,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15),
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  spreadRadius: 5,
+                                  blurRadius: 7,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 20,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Total Nilai Pekerjaan Aktual',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  '${formatter.format(totalAktual)}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(width: 35), // Jarak antara kotak
+
+                      // Kotak 3
+                      Stack(
+                        children: [
+                          Container(
+                            width: 350,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  spreadRadius: 5,
+                                  blurRadius: 7,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            left: 20,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Total Nilai Pekerjaan',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                Text(
+                                  'Kontrak/Tahun Berjalan',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  '${formatter.format(totalKontrak)}',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.5,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(width: 40), // Jarak akhir
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
                 height: 510,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -268,6 +478,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
+                          //kotak 1
                           Positioned(
                             top: 40,
                             left: 0,
@@ -492,7 +703,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Container(
                             width: 350,
-                            height: 400,
+                            height: 200,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(15),
                               color: Colors.white,
@@ -573,7 +784,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 30),
               Container(
                 width: 350,
-                height: 750,
+                height: 850,
                 padding:
                     const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
                 decoration: BoxDecoration(
