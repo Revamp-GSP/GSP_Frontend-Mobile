@@ -226,7 +226,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                         child: TextField(
                           controller: _searchController,
                           decoration: InputDecoration(
-                            labelText: 'Search by Projects Name',
+                            labelText: 'Search by Nama Pekerjaan',
                             prefixIcon: Icon(Icons.search, color: Colors.grey),
                             filled: true,
                             fillColor: Colors.white,
