@@ -110,7 +110,8 @@ class _LoginPageState extends State<LoginPage> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Login tidak berhasil"),
-            content: Text("Login tidak berhasil. Email atau Password anda tidak terdaftar"),
+            content: Text(
+                "Login tidak berhasil. Email atau Password anda tidak terdaftar"),
             actions: [
               TextButton(
                 onPressed: () {
@@ -186,9 +187,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
             Positioned(
               top: 255,
-              left: 160,
+              left: 175,
               child: Text(
-                'Sign in',
+                'Login',
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 20,
@@ -358,7 +359,7 @@ class _LoginPageState extends State<LoginPage> {
                   'Register',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.blue,
+                    color: Color.fromRGBO(33, 150, 243, 1),
                     decoration: TextDecoration.underline,
                   ),
                 ),
