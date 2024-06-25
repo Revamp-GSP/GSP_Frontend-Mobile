@@ -5,6 +5,7 @@ import 'package:flutter_application_1/home.dart';
 import 'package:flutter_application_1/inbox.dart';
 import 'package:flutter_application_1/login.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mysql1/mysql1.dart' as mysql;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -41,6 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadUserData();
+    _loadImageFromDatabase();
   }
 
   Future<void> _loadUserData() async {
@@ -57,9 +59,61 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  Future<void> _saveImageToLocal(String imagePath) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('profile_image', imagePath);
+  Future<void> _saveImageToDatabase(String imagePath) async {
+    final conn = await mysql.MySqlConnection.connect(mysql.ConnectionSettings(
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
+    ));
+
+    try {
+      // Asumsikan bahwa email disimpan dalam shared preferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String email = prefs.getString('email') ?? '';
+
+      await conn.query(
+        'UPDATE users SET image = ? WHERE email = ?',
+        [imagePath, email],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> _loadImageFromDatabase() async {
+    final conn = await mysql.MySqlConnection.connect(mysql.ConnectionSettings(
+      host: 'loyal.jagoanhosting.com',
+      port: 3306,
+      user: 'dkbmyid_admin',
+      password: 'dbbackend!',
+      db: 'dkbmyid_lara622',
+    ));
+
+    try {
+      // Asumsikan bahwa email disimpan dalam shared preferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String email = prefs.getString('email') ?? '';
+
+      var results = await conn.query(
+        'SELECT image FROM users WHERE email = ?',
+        [email],
+      );
+
+      if (results.isNotEmpty) {
+        var row = results.first;
+        String? imagePath = row[0];
+
+        if (imagePath != null) {
+          setState(() {
+            _image = File(imagePath);
+          });
+        }
+      }
+    } finally {
+      await conn.close();
+    }
   }
 
   Future<void> _getImageFromGallery() async {
@@ -68,8 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() {
       _image = File(image.path);
-      _saveImageToLocal(
-          _image!.path); // Simpan path file gambar ke penyimpanan lokal
+      _saveImageToDatabase(_image!.path); // Simpan path file gambar ke database
     });
   }
 
@@ -79,8 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() {
       _image = File(image.path);
-      _saveImageToLocal(
-          _image!.path); // Simpan path file gambar ke penyimpanan lokal
+      _saveImageToDatabase(_image!.path); // Simpan path file gambar ke database
     });
   }
 
