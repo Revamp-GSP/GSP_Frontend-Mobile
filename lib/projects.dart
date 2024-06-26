@@ -263,7 +263,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                               DataColumn(label: Text('Customer ID')),
                               DataColumn(label: Text('Nama Pelanggan')),
                               DataColumn(label: Text('Product ID')),
-                              DataColumn(label: Text('Jenis Layanan')),
+                              DataColumn(label: Text('Nama Service')),
                               DataColumn(label: Text('Nama Pekerjaan')),
                               DataColumn(label: Text('Nilai Pekerjaan Rekap')),
                               DataColumn(label: Text('Nilai Pekerjaan Aktual')),
@@ -305,8 +305,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                             '${project['nama_pelanggan']}')),
                                         DataCell(
                                             Text('${project['product_id']}')),
-                                        DataCell(Text(
-                                            '${project['jenis_layanan']}')),
+                                        DataCell(
+                                            Text('${project['nama_service']}')),
                                         DataCell(
                                           GestureDetector(
                                             child: Text(
