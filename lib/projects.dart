@@ -12,15 +12,14 @@ class ProjectsPage extends StatefulWidget {
 class _ProjectsPageState extends State<ProjectsPage> {
   late MySqlConnection _connection;
   List<Map<String, dynamic>> _projects = [];
-  List<Map<String, dynamic>> _filteredProjects = [];
   TextEditingController _searchController = TextEditingController();
 
   List<String> statuses = [
     'Postpone',
     'Follow Up',
-    'Implementasi',
-    'Payment',
-    'Finished'
+    'Implementation',
+    'Pembayaran',
+    'Selesai'
   ];
 
   @override
@@ -40,8 +39,8 @@ class _ProjectsPageState extends State<ProjectsPage> {
 
     try {
       _connection = await MySqlConnection.connect(settings);
-      await _fetchProjectsFromDB();
-      setState(() {});
+      await _fetchProjectsFromDB(); // Fetch projects from DB
+      setState(() {}); // Update state to trigger build
     } catch (e) {
       print('Error connecting to database: $e');
     }
@@ -50,7 +49,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
   Future<void> _fetchProjectsFromDB() async {
     var results = await _connection.query('SELECT * FROM projects');
 
-    _projects.clear();
+    _projects.clear(); // Clear existing projects
     results.forEach((row) {
       _projects.add(Map<String, dynamic>.from(row.fields));
     });
@@ -112,6 +111,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                // White Box and Bar Chart
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
@@ -127,8 +127,9 @@ class _ProjectsPageState extends State<ProjectsPage> {
                   ),
                   padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.all(10),
-                  height: 300,
-                  width: MediaQuery.of(context).size.width * 1.5,
+                  height: 300, // Sesuaikan dengan kebutuhan
+                  width: MediaQuery.of(context).size.width *
+                      1.5, // Sesuaikan dengan kebutuhan
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
@@ -149,8 +150,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
-                                margin:
-                                    40, // Ubah nilai margin sesuai kebutuhan Anda
+                                margin: 50,
                                 getTitles: (double value) {
                                   switch (value.toInt()) {
                                     case 0:
@@ -158,11 +158,11 @@ class _ProjectsPageState extends State<ProjectsPage> {
                                     case 1:
                                       return 'Follow Up';
                                     case 2:
-                                      return 'Implementasi';
+                                      return 'Implementation';
                                     case 3:
-                                      return 'Payment';
+                                      return 'Pembayaran';
                                     case 4:
-                                      return 'Finished';
+                                      return 'Selesai';
                                     default:
                                       return '';
                                   }
@@ -226,7 +226,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                         child: TextField(
                           controller: _searchController,
                           decoration: InputDecoration(
-                            labelText: 'Search by Nama Pekerjaan',
+                            labelText: 'Search by Projects Name',
                             prefixIcon: Icon(Icons.search, color: Colors.grey),
                             filled: true,
                             fillColor: Colors.white,
@@ -240,13 +240,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                             ),
                           ),
                           onChanged: (value) {
-                            setState(() {
-                              _filteredProjects = _projects
-                                  .where((project) => project['nama_pekerjaan']
-                                      .toLowerCase()
-                                      .contains(value.toLowerCase()))
-                                  .toList();
-                            });
+                            setState(() {});
                           },
                         ),
                       ),
@@ -263,7 +257,7 @@ class _ProjectsPageState extends State<ProjectsPage> {
                               DataColumn(label: Text('Customer ID')),
                               DataColumn(label: Text('Nama Pelanggan')),
                               DataColumn(label: Text('Product ID')),
-                              DataColumn(label: Text('Nama Service')),
+                              DataColumn(label: Text('Jenis Layanan')),
                               DataColumn(label: Text('Nama Pekerjaan')),
                               DataColumn(label: Text('Nilai Pekerjaan Rekap')),
                               DataColumn(label: Text('Nilai Pekerjaan Aktual')),
@@ -290,164 +284,73 @@ class _ProjectsPageState extends State<ProjectsPage> {
                               DataColumn(label: Text('Created At')),
                               DataColumn(label: Text('Updated At')),
                             ],
-                            rows: _searchController.text.isNotEmpty
-                                ? _filteredProjects.map((project) {
-                                    return DataRow(
-                                      color: MaterialStateColor.resolveWith(
-                                          (states) => Color.fromARGB(
-                                              255, 244, 223, 188)),
-                                      cells: [
-                                        DataCell(Text('${project['id']}')),
-                                        DataCell(Text('${project['status']}')),
-                                        DataCell(
-                                            Text('${project['customer_id']}')),
-                                        DataCell(Text(
-                                            '${project['nama_pelanggan']}')),
-                                        DataCell(
-                                            Text('${project['product_id']}')),
-                                        DataCell(
-                                            Text('${project['nama_service']}')),
-                                        DataCell(
-                                          GestureDetector(
-                                            child: Text(
-                                              '${project['nama_pekerjaan']}',
-                                              style: TextStyle(
-                                                color: Colors.blue,
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
+                            rows: _projects.map((project) {
+                              return DataRow(
+                                color: MaterialStateColor.resolveWith(
+                                    (states) =>
+                                        Color.fromARGB(255, 244, 223, 188)),
+                                cells: [
+                                  DataCell(Text('${project['id']}')),
+                                  DataCell(Text('${project['status']}')),
+                                  DataCell(Text('${project['customer_id']}')),
+                                  DataCell(
+                                      Text('${project['nama_pelanggan']}')),
+                                  DataCell(Text('${project['product_id']}')),
+                                  DataCell(Text('${project['jenis_layanan']}')),
+                                  DataCell(
+                                    GestureDetector(
+                                      child:
+                                          Text('${project['nama_pekerjaan']}'),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                DetailProjectsPage(
+                                              projectId: project[
+                                                  'id'], // Tambahkan ini
+                                              namaPekerjaan:
+                                                  '${project['nama_pekerjaan']}',
+                                              statusPekerjaan:
+                                                  '${project['status']}',
                                             ),
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      DetailProjectsPage(
-                                                    projectId: project['id'],
-                                                    namaPekerjaan:
-                                                        '${project['nama_pekerjaan']}',
-                                                    statusPekerjaan:
-                                                        '${project['status']}',
-                                                  ),
-                                                ),
-                                              );
-                                            },
                                           ),
-                                        ),
-                                        DataCell(Text(
-                                            '${project['nilai_perkerjaan_rkap']}')),
-                                        DataCell(Text(
-                                            '${project['nilai_pekerjaan_aktual']}')),
-                                        DataCell(Text(
-                                            '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
-                                        DataCell(Text(
-                                            '${project['plan_start_date']}')),
-                                        DataCell(Text(
-                                            '${project['plan_end_date']}')),
-                                        DataCell(Text(
-                                            '${project['actual_start_date']}')),
-                                        DataCell(Text(
-                                            '${project['actual_end_date']}')),
-                                        DataCell(Text(
-                                            '${project['account_marketing']}')),
-                                        DataCell(Text('${project['dirut']}')),
-                                        DataCell(Text('${project['dirop']}')),
-                                        DataCell(Text('${project['dirke']}')),
-                                        DataCell(Text('${project['kskmr']}')),
-                                        DataCell(Text('${project['ksham']}')),
-                                        DataCell(Text('${project['msdmu']}')),
-                                        DataCell(Text('${project['mkakt']}')),
-                                        DataCell(Text('${project['mbilp']}')),
-                                        DataCell(Text('${project['mppti']}')),
-                                        DataCell(Text('${project['mopti']}')),
-                                        DataCell(Text('${project['mbsar']}')),
-                                        DataCell(Text('${project['msadb']}')),
-                                        DataCell(
-                                            Text('${project['created_at']}')),
-                                        DataCell(
-                                            Text('${project['updated_at']}')),
-                                      ],
-                                    );
-                                  }).toList()
-                                : _projects.map((project) {
-                                    return DataRow(
-                                      color: MaterialStateColor.resolveWith(
-                                          (states) => Color.fromARGB(
-                                              255, 244, 223, 188)),
-                                      cells: [
-                                        DataCell(Text('${project['id']}')),
-                                        DataCell(Text('${project['status']}')),
-                                        DataCell(
-                                            Text('${project['customer_id']}')),
-                                        DataCell(Text(
-                                            '${project['nama_pelanggan']}')),
-                                        DataCell(
-                                            Text('${project['product_id']}')),
-                                        DataCell(Text(
-                                            '${project['jenis_layanan']}')),
-                                        DataCell(
-                                          GestureDetector(
-                                            child: Text(
-                                              '${project['nama_pekerjaan']}',
-                                              style: TextStyle(
-                                                color: Color.fromARGB(
-                                                    255, 24, 97, 158),
-                                                decoration:
-                                                    TextDecoration.underline,
-                                              ),
-                                            ),
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      DetailProjectsPage(
-                                                    projectId: project['id'],
-                                                    namaPekerjaan:
-                                                        '${project['nama_pekerjaan']}',
-                                                    statusPekerjaan:
-                                                        '${project['status']}',
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        DataCell(Text(
-                                            '${project['nilai_perkerjaan_rkap']}')),
-                                        DataCell(Text(
-                                            '${project['nilai_pekerjaan_aktual']}')),
-                                        DataCell(Text(
-                                            '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
-                                        DataCell(Text(
-                                            '${project['plan_start_date']}')),
-                                        DataCell(Text(
-                                            '${project['plan_end_date']}')),
-                                        DataCell(Text(
-                                            '${project['actual_start_date']}')),
-                                        DataCell(Text(
-                                            '${project['actual_end_date']}')),
-                                        DataCell(Text(
-                                            '${project['account_marketing']}')),
-                                        DataCell(Text('${project['dirut']}')),
-                                        DataCell(Text('${project['dirop']}')),
-                                        DataCell(Text('${project['dirke']}')),
-                                        DataCell(Text('${project['kskmr']}')),
-                                        DataCell(Text('${project['ksham']}')),
-                                        DataCell(Text('${project['msdmu']}')),
-                                        DataCell(Text('${project['mkakt']}')),
-                                        DataCell(Text('${project['mbilp']}')),
-                                        DataCell(Text('${project['mppti']}')),
-                                        DataCell(Text('${project['mopti']}')),
-                                        DataCell(Text('${project['mbsar']}')),
-                                        DataCell(Text('${project['msadb']}')),
-                                        DataCell(
-                                            Text('${project['created_at']}')),
-                                        DataCell(
-                                            Text('${project['updated_at']}')),
-                                      ],
-                                    );
-                                  }).toList(),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  DataCell(Text(
+                                      '${project['nilai_perkerjaan_rkap']}')),
+                                  DataCell(Text(
+                                      '${project['nilai_pekerjaan_aktual']}')),
+                                  DataCell(Text(
+                                      '${project['nilai_pekerjaan_kontrak_tahun_berjalan']}')),
+                                  DataCell(
+                                      Text('${project['plan_start_date']}')),
+                                  DataCell(Text('${project['plan_end_date']}')),
+                                  DataCell(
+                                      Text('${project['actual_start_date']}')),
+                                  DataCell(
+                                      Text('${project['actual_end_date']}')),
+                                  DataCell(
+                                      Text('${project['account_marketing']}')),
+                                  DataCell(Text('${project['dirut']}')),
+                                  DataCell(Text('${project['dirop']}')),
+                                  DataCell(Text('${project['dirke']}')),
+                                  DataCell(Text('${project['kskmr']}')),
+                                  DataCell(Text('${project['ksham']}')),
+                                  DataCell(Text('${project['msdmu']}')),
+                                  DataCell(Text('${project['mkakt']}')),
+                                  DataCell(Text('${project['mbilp']}')),
+                                  DataCell(Text('${project['mppti']}')),
+                                  DataCell(Text('${project['mopti']}')),
+                                  DataCell(Text('${project['mbsar']}')),
+                                  DataCell(Text('${project['msadb']}')),
+                                  DataCell(Text('${project['created_at']}')),
+                                  DataCell(Text('${project['updated_at']}')),
+                                ],
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
